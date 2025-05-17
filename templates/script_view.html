@@ -19,6 +19,18 @@
     .function-card {
         margin-bottom: 1.5rem;
     }
+    .tool-testing-form {
+        padding: 15px;
+        background-color: rgba(0,0,0,0.05);
+        border-radius: 5px;
+    }
+    .tool-testing-form label {
+        font-weight: bold;
+    }
+    .result-container {
+        max-height: 500px;
+        overflow-y: auto;
+    }
 </style>
 {% endblock %}
 
@@ -46,6 +58,100 @@
         <p><strong>Module Path:</strong> <code>{{ script.module_path }}</code></p>
         <p><strong>Category:</strong> {{ script.category.name }}</p>
         <p><strong>Last Updated:</strong> {{ script.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
+</div>
+
+<!-- Tool Testing Section -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0"><i class="fas fa-play-circle me-2"></i>Test This Tool</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i> This is a safe, educational environment where you can test this tool with limitations for learning purposes.
+        </div>
+
+        <form id="toolTestForm" class="tool-testing-form" action="{{ url_for('run_script', script_id=script.id) }}" method="post">
+            <div class="mb-3">
+                <label for="testParameters" class="form-label">Parameters:</label>
+                <div class="row">
+                    {% if script.title == 'Port Scanner' %}
+                        <div class="col-md-6 mb-3">
+                            <label for="target" class="form-label">Target IP or hostname:</label>
+                            <input type="text" class="form-control" id="target" name="target" placeholder="localhost" value="localhost">
+                            <small class="text-muted">For educational purposes, only localhost and a small set of demo targets are allowed</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ports" class="form-label">Ports to scan:</label>
+                            <input type="text" class="form-control" id="ports" name="ports" placeholder="80,443,8080" value="80,443,8080">
+                        </div>
+                    {% elif script.title == 'Hash Cracker' %}
+                        <div class="col-md-6 mb-3">
+                            <label for="hash" class="form-label">Hash to crack:</label>
+                            <input type="text" class="form-control" id="hash" name="hash" placeholder="5f4dcc3b5aa765d61d8327deb882cf99" value="5f4dcc3b5aa765d61d8327deb882cf99">
+                            <small class="text-muted">MD5 hash of "password" provided for demo purposes</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="algorithm" class="form-label">Algorithm:</label>
+                            <select class="form-control" id="algorithm" name="algorithm">
+                                <option value="md5">MD5</option>
+                                <option value="sha1">SHA-1</option>
+                                <option value="sha256">SHA-256</option>
+                            </select>
+                        </div>
+                    {% elif script.title == 'SQL Injection Tester' %}
+                        <div class="col-md-12 mb-3">
+                            <label for="url" class="form-label">URL to test:</label>
+                            <input type="text" class="form-control" id="url" name="url" placeholder="https://demo-target.com/login.php?id=1" value="https://demo-target.com/login.php?id=1">
+                            <small class="text-muted">For educational purposes, only simulated targets are accessible</small>
+                        </div>
+                    {% elif script.title == 'XSS Scanner' %}
+                        <div class="col-md-12 mb-3">
+                            <label for="url" class="form-label">URL to test:</label>
+                            <input type="text" class="form-control" id="url" name="url" placeholder="https://demo-target.com/search.php?q=test" value="https://demo-target.com/search.php?q=test">
+                            <small class="text-muted">For educational purposes, only simulated targets are accessible</small>
+                        </div>
+                    {% elif script.title == 'IoT Device Scanner' %}
+                        <div class="col-md-12 mb-3">
+                            <label for="network" class="form-label">Network to scan:</label>
+                            <input type="text" class="form-control" id="network" name="network" placeholder="192.168.1.0/24" value="192.168.1.0/24">
+                            <small class="text-muted">For educational purposes, a simulated network environment will be used</small>
+                        </div>
+                    {% else %}
+                        <div class="col-md-12">
+                            <p>Default parameters will be used for this demonstration.</p>
+                            <input type="hidden" name="default_params" value="true">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="ethicsCheckbox" required>
+                <label class="form-check-label" for="ethicsCheckbox">
+                    I understand that this is for <strong>educational purposes only</strong> and I will not use these tools for any unauthorized or illegal activity.
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" id="runButton">
+                <i class="fas fa-play me-1"></i> Run Tool
+            </button>
+        </form>
+        
+        <div id="resultContainer" class="mt-4 result-container d-none">
+            <h4>Results:</h4>
+            <div class="alert alert-secondary">
+                <div id="loadingIndicator">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border text-primary me-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span>Processing request...</span>
+                    </div>
+                </div>
+                <pre id="resultOutput" class="mb-0 d-none"></pre>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -143,6 +249,55 @@
                     console.error('Failed to copy: ', err);
                     alert('Failed to copy code');
                 });
+        });
+    });
+    
+    // Tool testing functionality
+    document.getElementById('toolTestForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const resultContainer = document.getElementById('resultContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultOutput = document.getElementById('resultOutput');
+        
+        // Show the result container with loading indicator
+        resultContainer.classList.remove('d-none');
+        loadingIndicator.classList.remove('d-none');
+        resultOutput.classList.add('d-none');
+        
+        // Collect form data
+        const formData = new FormData(form);
+        
+        // Send the request to the server
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Hide loading indicator and show results
+            loadingIndicator.classList.add('d-none');
+            resultOutput.classList.remove('d-none');
+            
+            // Format and display the results
+            if (data.success) {
+                resultOutput.innerHTML = data.results;
+                resultOutput.classList.add('text-success');
+                resultOutput.classList.remove('text-danger');
+            } else {
+                resultOutput.innerHTML = 'Error: ' + data.error;
+                resultOutput.classList.add('text-danger');
+                resultOutput.classList.remove('text-success');
+            }
+        })
+        .catch(error => {
+            // Hide loading indicator and show error
+            loadingIndicator.classList.add('d-none');
+            resultOutput.classList.remove('d-none');
+            resultOutput.innerHTML = 'An error occurred: ' + error.message;
+            resultOutput.classList.add('text-danger');
+            resultOutput.classList.remove('text-success');
         });
     });
 </script>

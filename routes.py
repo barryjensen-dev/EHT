@@ -2,6 +2,20 @@ import os
 import importlib
 import inspect
 import logging
+import json
+import re
+import socket
+import hashlib
+import time
+import random
+import threading
+import queue
+import subprocess
+import importlib.util
+import contextlib
+import io
+from functools import wraps
+
 from flask import render_template, request, redirect, url_for, abort, jsonify
 from app import app, db
 from models import Category, Script
@@ -78,6 +92,359 @@ def api_scripts():
             'module_path': script.module_path
         })
     return jsonify(result)
+
+@app.route('/run_script/<int:script_id>', methods=['POST'])
+def run_script(script_id):
+    """Run a script with the given parameters in a controlled, educational environment."""
+    script = Script.query.get_or_404(script_id)
+    
+    # Security check - ensure we're only running in educational mode
+    if not request.form.get('ethicsCheckbox', False) and 'default_params' not in request.form:
+        return jsonify({
+            'success': False,
+            'error': 'You must confirm the ethical use disclaimer to run this tool.'
+        })
+    
+    try:
+        # Get script parameters from the form
+        parameters = dict(request.form)
+        
+        # Remove the ethics checkbox from parameters
+        if 'ethicsCheckbox' in parameters:
+            del parameters['ethicsCheckbox']
+        
+        # Get simulated results based on the script type
+        results = simulate_script_execution(script, parameters)
+        
+        return jsonify({
+            'success': True,
+            'results': results
+        })
+    
+    except Exception as e:
+        logger.error(f"Error running script {script.module_path}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f"Error running script: {str(e)}"
+        })
+
+# Simulated script execution function
+def simulate_script_execution(script, parameters):
+    """
+    Simulate the execution of a script with provided parameters.
+    This is for educational purposes and ensures safe execution in the web environment.
+    """
+    # Add a slight delay to simulate processing
+    time.sleep(0.5)
+    
+    # Sanitize input parameters for security
+    sanitized_params = {k: sanitize_input(v) for k, v in parameters.items()}
+    
+    # Handle different script types with appropriate simulated responses
+    if script.title == 'Port Scanner':
+        return simulate_port_scanner(sanitized_params)
+    elif script.title == 'Hash Cracker':
+        return simulate_hash_cracker(sanitized_params)
+    elif script.title == 'SQL Injection Tester':
+        return simulate_sql_injection_tester(sanitized_params)
+    elif script.title == 'XSS Scanner':
+        return simulate_xss_scanner(sanitized_params)
+    elif script.title == 'IoT Device Scanner':
+        return simulate_iot_scanner(sanitized_params)
+    elif 'default_params' in sanitized_params:
+        # For other tools, provide a generic educational demo
+        return generate_generic_demo_output(script)
+    else:
+        return "This tool simulation is not yet implemented. Educational demo mode only."
+
+def sanitize_input(value):
+    """Sanitize user input to prevent security issues."""
+    if isinstance(value, str):
+        # Remove potentially dangerous characters
+        return re.sub(r'[;<>|&$]', '', value)
+    return value
+
+def simulate_port_scanner(params):
+    """Simulate port scanner execution with safe parameters."""
+    target = params.get('target', 'localhost')
+    ports_str = params.get('ports', '80,443,8080')
+    
+    # Restrict to safe targets
+    safe_targets = ['localhost', '127.0.0.1', 'demo-server.local', 'test-target.example.com']
+    if not any(target == safe_target or target.endswith('.example.com') for safe_target in safe_targets):
+        target = 'demo-server.local'  # Redirect to a safe demo target
+    
+    # Parse ports
+    try:
+        if ',' in ports_str:
+            ports = [int(p.strip()) for p in ports_str.split(',') if p.strip().isdigit()]
+        elif '-' in ports_str:
+            start, end = ports_str.split('-')
+            ports = list(range(int(start), int(end) + 1))
+        else:
+            ports = [int(ports_str)]
+        
+        # Limit number of ports for performance
+        ports = ports[:20]
+    except Exception:
+        ports = [80, 443, 8080]
+    
+    # Simulate port scanning results
+    results = []
+    results.append(f"Starting port scan on target: {target}")
+    results.append(f"Scanning {len(ports)} ports: {', '.join(map(str, ports))}")
+    results.append("\nResults:")
+    
+    # Generate simulated results
+    for port in ports:
+        state = random.choice(['open', 'closed', 'filtered'] if port != 80 and port != 443 else ['open'])
+        service = get_simulated_service(port)
+        results.append(f"Port {port}: {state.upper()} - {service}")
+    
+    results.append("\nScan completed successfully.")
+    return "\n".join(results)
+
+def get_simulated_service(port):
+    """Return a simulated service name for a given port."""
+    common_ports = {
+        21: 'FTP',
+        22: 'SSH',
+        23: 'Telnet',
+        25: 'SMTP',
+        53: 'DNS',
+        80: 'HTTP',
+        110: 'POP3',
+        143: 'IMAP',
+        443: 'HTTPS',
+        465: 'SMTPS',
+        587: 'SMTP',
+        993: 'IMAPS',
+        995: 'POP3S',
+        3306: 'MySQL',
+        3389: 'RDP',
+        5432: 'PostgreSQL',
+        8080: 'HTTP-Alt',
+        8443: 'HTTPS-Alt'
+    }
+    return common_ports.get(port, 'Unknown')
+
+def simulate_hash_cracker(params):
+    """Simulate hash cracking with predefined educational examples."""
+    hash_value = params.get('hash', '').lower()
+    algorithm = params.get('algorithm', 'md5')
+    
+    # Educational hash examples
+    educational_hashes = {
+        '5f4dcc3b5aa765d61d8327deb882cf99': 'password',  # MD5
+        'e10adc3949ba59abbe56e057f20f883e': '123456',    # MD5
+        '098f6bcd4621d373cade4e832627b4f6': 'test',      # MD5
+        '5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8': 'password',  # SHA1
+        '8cb2237d0679ca88db6464eac60da96345513964': '12345',     # SHA1
+    }
+    
+    # Simulate the hash cracking process
+    results = []
+    results.append(f"Starting hash cracking simulation for: {hash_value}")
+    results.append(f"Using algorithm: {algorithm.upper()}")
+    results.append("\nAttempting dictionary attack...")
+    
+    # Simulate progress
+    for i in range(3):
+        results.append(f"Trying password list {i+1}... {random.randint(5000, 20000)} passwords checked")
+    
+    # Check if we have a match in our educational examples
+    if hash_value in educational_hashes:
+        password = educational_hashes[hash_value]
+        results.append("\n[SUCCESS] Password found!")
+        results.append(f"The hash {hash_value} corresponds to: {password}")
+    else:
+        results.append("\n[INFO] This is a simulation. In a real scenario, the cracking process could take minutes to years depending on:")
+        results.append("- Hash algorithm strength")
+        results.append("- Password complexity")
+        results.append("- Computing resources available")
+        results.append("\nFor educational purposes, try these example hashes:")
+        results.append("- MD5 of 'password': 5f4dcc3b5aa765d61d8327deb882cf99")
+        results.append("- MD5 of '123456': e10adc3949ba59abbe56e057f20f883e")
+    
+    return "\n".join(results)
+
+def simulate_sql_injection_tester(params):
+    """Simulate SQL injection testing on a demo target."""
+    url = params.get('url', 'https://demo-target.com/login.php?id=1')
+    
+    # Ensure we're using a demo target
+    if not url.startswith('https://demo-target.com'):
+        url = 'https://demo-target.com/login.php?id=1'
+    
+    results = []
+    results.append(f"Starting SQL injection vulnerability assessment on: {url}")
+    results.append("\nTesting various injection payloads:")
+    
+    # Simulate injection tests
+    payloads = [
+        "id=1' OR '1'='1", 
+        "id=1; DROP TABLE users", 
+        "id=1 UNION SELECT username,password FROM users",
+        "id=1' OR 1=1 --",
+        "id=1') OR ('1'='1"
+    ]
+    
+    for i, payload in enumerate(payloads):
+        test_url = url.replace('id=1', payload)
+        results.append(f"\n[Test {i+1}] Trying: {test_url}")
+        
+        # Simulate vulnerability detection for educational purposes
+        if i == 0 or i == 3:  # Make some tests "find" vulnerabilities
+            results.append("[VULNERABLE] The application responded with user data when it shouldn't")
+            results.append("Sample response (simulated): \n  {\"status\":\"success\",\"data\":[{\"id\":1,\"name\":\"admin\"}]}")
+        else:
+            results.append("[SECURE] No vulnerability detected with this payload")
+    
+    results.append("\nEducational notes:")
+    results.append("- Always use prepared statements to prevent SQL injection")
+    results.append("- Validate and sanitize all user input")
+    results.append("- Implement proper error handling to avoid leaking database information")
+    results.append("- Use a Web Application Firewall (WAF) for additional protection")
+    
+    return "\n".join(results)
+
+def simulate_xss_scanner(params):
+    """Simulate XSS scanning on a demo target."""
+    url = params.get('url', 'https://demo-target.com/search.php?q=test')
+    
+    # Ensure we're using a demo target
+    if not url.startswith('https://demo-target.com'):
+        url = 'https://demo-target.com/search.php?q=test'
+    
+    results = []
+    results.append(f"Starting Cross-Site Scripting (XSS) vulnerability assessment on: {url}")
+    results.append("\nTesting various XSS payloads:")
+    
+    # Simulate XSS tests
+    payloads = [
+        "<script>alert('XSS')</script>", 
+        "<img src='x' onerror='alert(\"XSS\")'/>", 
+        "<body onload='alert(\"XSS\")'></body>",
+        "<svg/onload=alert('XSS')>",
+        "javascript:alert('XSS')"
+    ]
+    
+    for i, payload in enumerate(payloads):
+        test_url = url.replace('q=test', f"q={payload}")
+        results.append(f"\n[Test {i+1}] Trying: {payload}")
+        
+        # Simulate vulnerability detection for educational purposes
+        if i == 1 or i == 3:  # Make some tests "find" vulnerabilities
+            results.append("[VULNERABLE] The payload was reflected in the response without proper encoding")
+            results.append(f"The application returned the payload in the HTML response:")
+            results.append(f"  <div class='search-result'>Results for: {payload}</div>")
+        else:
+            results.append("[SECURE] Payload was properly sanitized or blocked")
+    
+    results.append("\nEducational notes:")
+    results.append("- Always validate and sanitize user input")
+    results.append("- Use context-appropriate encoding (HTML, JavaScript, CSS, URL)")
+    results.append("- Implement Content Security Policy (CSP) headers")
+    results.append("- Consider using modern frameworks that automatically escape output")
+    results.append("- Use the HTTPOnly flag for sensitive cookies to prevent access from JavaScript")
+    
+    return "\n".join(results)
+
+def simulate_iot_scanner(params):
+    """Simulate IoT device scanning on a demo network."""
+    network = params.get('network', '192.168.1.0/24')
+    
+    results = []
+    results.append(f"Starting IoT device scan on network: {network}")
+    results.append("Using simulated environment for educational purposes")
+    results.append("\nDiscovering devices...")
+    
+    # Simulate device discovery
+    devices = [
+        {"ip": "192.168.1.10", "mac": "A1:B2:C3:D4:E5:F6", "manufacturer": "IoT Camera Co.", "type": "IP Camera"},
+        {"ip": "192.168.1.15", "mac": "F1:E2:D3:C4:B5:A6", "manufacturer": "Smart Home Ltd.", "type": "Smart Speaker"},
+        {"ip": "192.168.1.20", "mac": "11:22:33:44:55:66", "manufacturer": "Connect Devices Inc.", "type": "Smart Thermostat"},
+        {"ip": "192.168.1.25", "mac": "AA:BB:CC:DD:EE:FF", "manufacturer": "Security Systems", "type": "Door Lock Controller"},
+        {"ip": "192.168.1.30", "mac": "12:34:56:78:90:AB", "manufacturer": "Smart TV Corp.", "type": "Smart TV"}
+    ]
+    
+    results.append(f"Found {len(devices)} IoT devices")
+    
+    # Show device details
+    results.append("\nDevice Details:")
+    for i, device in enumerate(devices):
+        results.append(f"\n[Device {i+1}]")
+        results.append(f"  IP Address: {device['ip']}")
+        results.append(f"  MAC Address: {device['mac']}")
+        results.append(f"  Manufacturer: {device['manufacturer']}")
+        results.append(f"  Device Type: {device['type']}")
+        
+        # Add random open ports
+        open_ports = random.sample(range(1, 10000), random.randint(2, 5))
+        results.append(f"  Open Ports: {', '.join(map(str, sorted(open_ports)))}")
+        
+        # Add some vulnerabilities for educational purposes
+        if i % 2 == 0:  # Add vulnerabilities to some devices
+            vulns = random.sample([
+                "Default credentials (admin/admin)",
+                "Outdated firmware (v1.2.3)",
+                "Telnet enabled on port 23",
+                "Unencrypted HTTP management interface",
+                "UPnP vulnerability CVE-2020-12345"
+            ], 2)
+            results.append(f"  Potential Vulnerabilities:")
+            for vuln in vulns:
+                results.append(f"    - {vuln}")
+    
+    results.append("\nEducational notes:")
+    results.append("- Keep IoT device firmware updated")
+    results.append("- Change default credentials")
+    results.append("- Use network segmentation for IoT devices")
+    results.append("- Disable unnecessary services (Telnet, UPnP, etc.)")
+    results.append("- Monitor IoT device network traffic for anomalies")
+    
+    return "\n".join(results)
+
+def generate_generic_demo_output(script):
+    """Generate generic demo output for scripts without specific implementations."""
+    results = []
+    results.append(f"Educational demonstration for: {script.title}")
+    results.append("This is a simulated output for educational purposes only.")
+    results.append("\nTool Summary:")
+    results.append(f"- Category: {script.category.name}")
+    results.append(f"- Description: {script.description}")
+    
+    # Generate random educational content based on category
+    if script.category.name == 'Web Application Security':
+        results.append("\nWeb Security Best Practices:")
+        results.append("- Implement input validation and sanitization")
+        results.append("- Use parameterized queries for database operations")
+        results.append("- Apply the principle of least privilege")
+        results.append("- Implement proper session management")
+        results.append("- Use HTTPS for all communications")
+    elif script.category.name == 'Network Security':
+        results.append("\nNetwork Security Controls:")
+        results.append("- Implement network segmentation")
+        results.append("- Use firewalls and IDS/IPS")
+        results.append("- Monitor network traffic for anomalies")
+        results.append("- Encrypt sensitive data in transit")
+        results.append("- Regularly scan for vulnerabilities")
+    elif script.category.name == 'Cryptography':
+        results.append("\nCryptographic Security Guidelines:")
+        results.append("- Use strong, standardized algorithms")
+        results.append("- Implement proper key management")
+        results.append("- Never roll your own crypto")
+        results.append("- Use sufficient key lengths")
+        results.append("- Regularly rotate encryption keys")
+    else:
+        results.append("\nSecurity Fundamentals:")
+        results.append("- Apply defense in depth")
+        results.append("- Follow the principle of least privilege")
+        results.append("- Regularly update and patch systems")
+        results.append("- Educate users on security practices")
+        results.append("- Perform regular security assessments")
+    
+    return "\n".join(results)
 
 # Error handlers
 @app.errorhandler(404)
