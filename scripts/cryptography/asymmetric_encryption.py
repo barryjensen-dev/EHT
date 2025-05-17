@@ -16,9 +16,16 @@ import json
 import time
 import logging
 from pathlib import Path
-from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec, utils as crypto_utils
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.exceptions import InvalidSignature
+
+# Import necessary cryptographic libraries
+try:
+    from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.exceptions import InvalidSignature
+    CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+    # If cryptography is not available, we'll provide educational examples only
+    CRYPTOGRAPHY_AVAILABLE = False
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

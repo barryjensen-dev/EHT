@@ -301,8 +301,11 @@ class CoAPScanner:
         
         # Token (random)
         token_length = 4
-        header[0] |= token_length
-        token = random.randbytes(token_length)
+        # Create new header with token length set - need to rebuild since bytes are immutable
+        new_header_byte = header[0] | token_length
+        header = bytes([new_header_byte]) + header[1:]
+        # Generate random token
+        token = bytes([random.randint(0, 255) for _ in range(token_length)])
         
         # Options
         # Uri-Path option for /.well-known/core
