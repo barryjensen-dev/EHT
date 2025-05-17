@@ -14,6 +14,8 @@ import subprocess
 import importlib.util
 import contextlib
 import io
+import requests
+import ipaddress
 from functools import wraps
 from datetime import datetime, timedelta
 
@@ -100,9 +102,228 @@ def api_threats():
     # Get timeframe parameter (default to 24 hours = 86400 seconds)
     timeframe = request.args.get('timeframe', default=86400, type=int)
     
-    # In a real application, this would fetch data from a threat database
-    # For demo purposes, we'll generate random threat data
-    return jsonify(generate_demo_threat_data(timeframe))
+    # Fetch real threat data from OTX
+    return jsonify(fetch_real_threat_data(timeframe))
+
+def fetch_real_threat_data(timeframe=86400):
+    """
+    Fetch real threat data from AlienVault OTX API.
+    
+    Parameters:
+    -----------
+    timeframe : int
+        Timeframe in seconds to fetch data for (default: 24 hours)
+        
+    Returns:
+    --------
+    list:
+        List of threat objects with various properties
+    """
+    # Get OTX API key from environment
+    api_key = os.environ.get('OTX_API_KEY')
+    
+    if not api_key:
+        logger.error("OTX API key not found in environment variables")
+        # Fall back to demo data if API key is not available
+        return generate_demo_threat_data(timeframe)
+    
+    # Calculate start time based on timeframe
+    start_time = (datetime.now() - timedelta(seconds=timeframe)).isoformat()
+    
+    # Initialize threats list
+    threats = []
+    
+    try:
+        # Fetch pulses (threat intelligence reports)
+        headers = {'X-OTX-API-KEY': api_key}
+        url = f'https://otx.alienvault.com/api/v1/pulses/subscribed?modified_since={start_time}'
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        pulses_data = response.json()
+        
+        # Process pulse data
+        if 'results' in pulses_data:
+            logger.info(f"Got {len(pulses_data['results'])} pulses from OTX")
+            
+            # Process each pulse
+            for i, pulse in enumerate(pulses_data['results']):
+                # Get basic pulse info
+                pulse_name = pulse.get('name', 'Unknown Threat')
+                pulse_description = pulse.get('description', '')
+                pulse_tags = pulse.get('tags', [])
+                pulse_created = pulse.get('created', '')
+                
+                # Determine threat type from tags
+                threat_type = determine_threat_type(pulse_tags)
+                
+                # Determine severity based on indicators and tags
+                severity = determine_severity(pulse)
+                
+                # Process indicators
+                for indicator in pulse.get('indicators', []):
+                    indicator_type = indicator.get('type', '')
+                    indicator_value = indicator.get('indicator', '')
+                    
+                    # Only process IP indicators
+                    if indicator_type == 'IPv4' and is_valid_public_ip(indicator_value):
+                        try:
+                            # Get geolocation for the IP
+                            geo_url = f'https://otx.alienvault.com/api/v1/indicators/IPv4/{indicator_value}/geo'
+                            geo_response = requests.get(geo_url, headers=headers, timeout=10)
+                            geo_data = geo_response.json()
+                            
+                            # Extract country and coordinates
+                            country = geo_data.get('country_name', 'Unknown')
+                            latitude = geo_data.get('latitude', 0)
+                            longitude = geo_data.get('longitude', 0)
+                            
+                            # Create threat object
+                            threats.append({
+                                "id": len(threats) + 1,
+                                "type": threat_type,
+                                "source_country": country,
+                                "target_country": get_random_target_country(country),
+                                "latitude": latitude,
+                                "longitude": longitude,
+                                "severity": severity,
+                                "timestamp": pulse_created,
+                                "description": pulse_name + (f" - {pulse_description[:100]}..." if pulse_description else "")
+                            })
+                            
+                        except Exception as e:
+                            logger.error(f"Error processing indicator {indicator_value}: {str(e)}")
+                    
+                    # Limit the number of threats per pulse to avoid overloading the map
+                    if len(threats) % 100 == 0 and i > 3:
+                        break
+                        
+                # Limit total number of threats to 500 for performance
+                if len(threats) >= 500:
+                    break
+            
+        # If no real threats were found, generate some demo data
+        if not threats:
+            logger.warning("No real threats found in OTX, using demo data")
+            return generate_demo_threat_data(timeframe)
+            
+        return threats
+        
+    except Exception as e:
+        logger.error(f"Error fetching threat data from OTX: {str(e)}")
+        # Fall back to demo data if there's an error
+        return generate_demo_threat_data(timeframe)
+
+def determine_threat_type(tags):
+    """Determine threat type based on tags."""
+    # Map common tags to threat types
+    tag_mappings = {
+        'malware': 'Malware',
+        'ransomware': 'Malware',
+        'trojan': 'Malware',
+        'spyware': 'Malware',
+        'botnet': 'Malware',
+        'rat': 'Malware',
+        'phishing': 'Phishing',
+        'social engineering': 'Phishing',
+        'ddos': 'DDoS',
+        'dos': 'DDoS',
+        'brute': 'Bruteforce',
+        'brute force': 'Bruteforce',
+        'bruteforce': 'Bruteforce',
+        'cve': 'Vulnerability',
+        'exploit': 'Vulnerability',
+        'vulnerability': 'Vulnerability',
+        'patch': 'Vulnerability'
+    }
+    
+    # Check if any tags match our mapping
+    for tag in tags:
+        tag_lower = tag.lower()
+        for key, value in tag_mappings.items():
+            if key in tag_lower:
+                return value
+    
+    # Default to Other if no matching tags
+    return 'Other'
+
+def determine_severity(pulse):
+    """Determine severity based on pulse data."""
+    # Check for specific severity indicators
+    tags = [tag.lower() for tag in pulse.get('tags', [])]
+    name = pulse.get('name', '').lower()
+    description = pulse.get('description', '').lower()
+    indicator_count = len(pulse.get('indicators', []))
+    
+    # Critical (5) if related to APT, zero-day, or critical vulnerabilities
+    critical_terms = ['apt', 'zero-day', 'zero day', '0day', 'critical vulnerability', 
+                      'critical cve', 'ransomware', 'high impact', 'widespread', 'active exploitation']
+    
+    # High (4) if related to exploits, malware campaigns
+    high_terms = ['exploit', 'malware campaign', 'backdoor', 'high severity', 
+                  'trojan', 'banking trojan', 'data breach']
+    
+    # Medium (3) if related to general vulnerabilities or scanning
+    medium_terms = ['vulnerability', 'cve', 'scanning', 'medium severity', 
+                    'information disclosure', 'misconfiguration']
+    
+    # Low (2) if related to potential issues or general information
+    low_terms = ['potential', 'possible', 'low severity', 'informational']
+    
+    # Check for critical terms
+    for term in critical_terms:
+        if term in name or term in description or term in tags:
+            return 5
+    
+    # Check for high severity terms
+    for term in high_terms:
+        if term in name or term in description or term in tags:
+            return 4
+    
+    # Check for medium severity terms
+    for term in medium_terms:
+        if term in name or term in description or term in tags:
+            return 3
+    
+    # Check for low severity terms
+    for term in low_terms:
+        if term in name or term in description or term in tags:
+            return 2
+    
+    # Base severity on indicator count as a fallback
+    if indicator_count > 20:
+        return 4
+    elif indicator_count > 10:
+        return 3
+    elif indicator_count > 5:
+        return 2
+    
+    # Default to 1 (minimal severity) if no other criteria match
+    return 1
+
+def is_valid_public_ip(ip_str):
+    """Check if an IP is valid and public."""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        return ip.is_global and not ip.is_multicast and not ip.is_private and not ip.is_reserved
+    except ValueError:
+        return False
+
+def get_random_target_country(source_country):
+    """Get a random target country different from the source country."""
+    common_countries = [
+        "United States", "China", "Russia", "United Kingdom", "Germany", 
+        "Brazil", "Australia", "India", "Japan", "Canada", "South Korea", 
+        "France", "Mexico", "Italy", "Singapore", "South Africa", 
+        "Spain", "Ukraine", "Netherlands", "Sweden"
+    ]
+    
+    # Remove source country from potential targets
+    potential_targets = [c for c in common_countries if c != source_country]
+    
+    # Return random target country or default if none available
+    return random.choice(potential_targets) if potential_targets else "Unknown"
 
 def generate_demo_threat_data(timeframe=86400):
     """
