@@ -15,6 +15,7 @@ import importlib.util
 import contextlib
 import io
 from functools import wraps
+from datetime import datetime, timedelta
 
 from flask import render_template, request, redirect, url_for, abort, jsonify
 from app import app, db
@@ -92,6 +93,135 @@ def api_scripts():
             'module_path': script.module_path
         })
     return jsonify(result)
+
+@app.route('/api/threats')
+def api_threats():
+    """API endpoint to get threat data for visualization."""
+    # Get timeframe parameter (default to 24 hours = 86400 seconds)
+    timeframe = request.args.get('timeframe', default=86400, type=int)
+    
+    # In a real application, this would fetch data from a threat database
+    # For demo purposes, we'll generate random threat data
+    return jsonify(generate_demo_threat_data(timeframe))
+
+def generate_demo_threat_data(timeframe=86400):
+    """
+    Generate demo threat data for the threat visualization map.
+    
+    Parameters:
+    -----------
+    timeframe : int
+        Timeframe in seconds to generate data for (default: 24 hours)
+        
+    Returns:
+    --------
+    list:
+        List of threat objects with various properties
+    """
+    # Countries and coordinates for demo data
+    countries = [
+        {"name": "United States", "coords": [37.0902, -95.7129]},
+        {"name": "China", "coords": [35.8617, 104.1954]},
+        {"name": "Russia", "coords": [61.5240, 105.3188]},
+        {"name": "United Kingdom", "coords": [55.3781, -3.4360]},
+        {"name": "Germany", "coords": [51.1657, 10.4515]},
+        {"name": "Brazil", "coords": [-14.2350, -51.9253]},
+        {"name": "Australia", "coords": [-25.2744, 133.7751]},
+        {"name": "India", "coords": [20.5937, 78.9629]},
+        {"name": "Japan", "coords": [36.2048, 138.2529]},
+        {"name": "Canada", "coords": [56.1304, -106.3468]},
+        {"name": "South Korea", "coords": [35.9078, 127.7669]},
+        {"name": "France", "coords": [46.2276, 2.2137]},
+        {"name": "Mexico", "coords": [23.6345, -102.5528]},
+        {"name": "Italy", "coords": [41.8719, 12.5674]},
+        {"name": "Singapore", "coords": [1.3521, 103.8198]},
+        {"name": "South Africa", "coords": [-30.5595, 22.9375]},
+        {"name": "Spain", "coords": [40.4637, -3.7492]},
+        {"name": "Ukraine", "coords": [48.3794, 31.1656]},
+        {"name": "Netherlands", "coords": [52.1326, 5.2913]},
+        {"name": "Sweden", "coords": [60.1282, 18.6435]}
+    ]
+    
+    # Threat types
+    threat_types = ['Malware', 'Phishing', 'DDoS', 'Bruteforce', 'Vulnerability', 'Other']
+    
+    # Generate varying number of threats based on timeframe
+    # Shorter timeframe = fewer threats, longer timeframe = more threats
+    base_count = int(50 * (timeframe / 86400))  # 50 threats per day
+    variance = int(base_count * 0.3)  # 30% variance
+    threat_count = base_count + random.randint(-variance, variance)
+    threat_count = max(10, threat_count)  # At least 10 threats
+    
+    # Current time
+    now = datetime.now()
+    
+    # Generate threats
+    threats = []
+    for i in range(threat_count):
+        # Select random source and target countries
+        source_index = random.randint(0, len(countries) - 1)
+        target_index = random.randint(0, len(countries) - 1)
+        
+        # Ensure source and target are different
+        while target_index == source_index:
+            target_index = random.randint(0, len(countries) - 1)
+        
+        source = countries[source_index]
+        target = countries[target_index]
+        
+        # Add some randomness to coordinates (within the country's general area)
+        source_coords = [
+            source["coords"][0] + (random.random() * 10 - 5),
+            source["coords"][1] + (random.random() * 10 - 5)
+        ]
+        
+        # Select random threat type and severity
+        threat_type = random.choice(threat_types)
+        severity = random.randint(1, 5)
+        
+        # Generate random timestamp within the specified timeframe
+        random_seconds = random.randint(0, timeframe)
+        timestamp = (now - timedelta(seconds=random_seconds)).isoformat()
+        
+        # Create threat description based on type
+        description = ""
+        if threat_type == "Malware":
+            malware_types = ["ransomware", "trojan", "spyware", "worm", "botnet"]
+            description = f"Detected {random.choice(malware_types)} infection attempt"
+        elif threat_type == "Phishing":
+            phishing_types = ["email", "SMS", "voice", "social media"]
+            description = f"{random.choice(phishing_types).capitalize()} phishing campaign targeting users"
+        elif threat_type == "DDoS":
+            traffic = random.randint(10, 100)
+            description = f"DDoS attack with {traffic} Gbps traffic volume"
+        elif threat_type == "Bruteforce":
+            targets = ["SSH", "RDP", "FTP", "admin panel", "API"]
+            description = f"Brute force attempt targeting {random.choice(targets)} services"
+        elif threat_type == "Vulnerability":
+            vuln_types = ["zero-day", "unpatched", "misconfigured", "known"]
+            description = f"Exploitation attempt of {random.choice(vuln_types)} vulnerability"
+        else:
+            description = "Suspicious activity detected from this location"
+        
+        # Create threat object
+        threats.append({
+            "id": i + 1,
+            "type": threat_type,
+            "source_country": source["name"],
+            "target_country": target["name"],
+            "latitude": source_coords[0],
+            "longitude": source_coords[1],
+            "severity": severity,
+            "timestamp": timestamp,
+            "description": description
+        })
+    
+    return threats
+
+@app.route('/threat-map')
+def threat_map():
+    """Render the threat visualization map page."""
+    return render_template('threat_map.html')
 
 @app.route('/run_script/<int:script_id>', methods=['POST'])
 def run_script(script_id):

@@ -1,0 +1,277 @@
+{% extends "layout.html" %}
+
+{% block title %}Real-time Threat Visualization - Ethical Hacking Toolkit{% endblock %}
+
+{% block head %}
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/threat-map.css') }}" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1>Real-time Threat Visualization Map</h1>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary active" id="view-map-btn">Map View</button>
+                    <button type="button" class="btn btn-outline-primary" id="view-stats-btn">Statistics</button>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                This map visualizes real-time security threats detected across the globe. Use the filters to customize the view and timeframe.
+            </div>
+        </div>
+    </div>
+
+    <!-- Map View -->
+    <div class="row" id="map-view">
+        <div class="col-12">
+            <div class="threat-map-container">
+                <div id="threat-map"></div>
+            </div>
+            
+            <div id="threat-counter" class="mt-3">
+                <div>Loading threat statistics...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics View (hidden by default) -->
+    <div class="row d-none" id="stats-view">
+        <div class="col-md-6">
+            <div class="stats-card">
+                <h4>Threat Distribution</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="number" id="malware-count">0</div>
+                        <div class="label">Malware</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="phishing-count">0</div>
+                        <div class="label">Phishing</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="ddos-count">0</div>
+                        <div class="label">DDoS</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="bruteforce-count">0</div>
+                        <div class="label">Brute Force</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="vulnerability-count">0</div>
+                        <div class="label">Vulnerabilities</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="other-count">0</div>
+                        <div class="label">Other</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="stats-card">
+                <h4>Severity Distribution</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="number" id="low-severity">0</div>
+                        <div class="label">Low</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="medium-severity">0</div>
+                        <div class="label">Medium</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="high-severity">0</div>
+                        <div class="label">High</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="critical-severity">0</div>
+                        <div class="label">Critical</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="number" id="extreme-severity">0</div>
+                        <div class="label">Extreme</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 mt-4">
+            <div class="stats-card">
+                <h4>Top Source Countries</h4>
+                <div class="stats-grid" id="top-sources">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 mt-4">
+            <div class="stats-card">
+                <h4>Top Target Countries</h4>
+                <div class="stats-grid" id="top-targets">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Information -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark">
+                    <h4 class="m-0">Understanding Security Threats</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Types of Security Threats</h5>
+                    <ul>
+                        <li><strong>Malware:</strong> Malicious software designed to damage or gain unauthorized access to systems.</li>
+                        <li><strong>Phishing:</strong> Deceptive attempts to steal sensitive information by impersonating trustworthy entities.</li>
+                        <li><strong>DDoS:</strong> Distributed Denial of Service attacks that flood systems with traffic to disrupt service.</li>
+                        <li><strong>Brute Force:</strong> Attempts to guess credentials by systematically trying all possible combinations.</li>
+                        <li><strong>Vulnerabilities:</strong> Weaknesses in systems or software that can be exploited by attackers.</li>
+                    </ul>
+                    
+                    <h5>Security Best Practices</h5>
+                    <ul>
+                        <li>Keep all systems and software up-to-date with security patches.</li>
+                        <li>Use strong, unique passwords and enable multi-factor authentication.</li>
+                        <li>Implement proper network segmentation and firewalls.</li>
+                        <li>Regularly backup important data and test recovery procedures.</li>
+                        <li>Train users to recognize and report suspicious activities.</li>
+                        <li>Employ intrusion detection and prevention systems.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/threat-map.js') }}"></script>
+<script>
+    // View toggle functionality
+    document.getElementById('view-map-btn').addEventListener('click', function() {
+        document.getElementById('map-view').classList.remove('d-none');
+        document.getElementById('stats-view').classList.add('d-none');
+        this.classList.add('active');
+        document.getElementById('view-stats-btn').classList.remove('active');
+    });
+    
+    document.getElementById('view-stats-btn').addEventListener('click', function() {
+        document.getElementById('stats-view').classList.remove('d-none');
+        document.getElementById('map-view').classList.add('d-none');
+        this.classList.add('active');
+        document.getElementById('view-map-btn').classList.remove('active');
+        
+        // Update statistics when switching to stats view
+        updateStatistics();
+    });
+    
+    // Function to update statistics display
+    function updateStatistics() {
+        fetch('/api/threats')
+            .then(response => response.json())
+            .then(data => {
+                // Count threats by type
+                const typeCounts = {
+                    'Malware': 0,
+                    'Phishing': 0,
+                    'DDoS': 0,
+                    'Bruteforce': 0,
+                    'Vulnerability': 0,
+                    'Other': 0
+                };
+                
+                // Count threats by severity
+                const severityCounts = {
+                    1: 0, // Low
+                    2: 0, // Medium
+                    3: 0, // High
+                    4: 0, // Critical
+                    5: 0  // Extreme
+                };
+                
+                // Count source and target countries
+                const sourceCounts = {};
+                const targetCounts = {};
+                
+                // Process each threat
+                data.forEach(threat => {
+                    // Count by type
+                    if (threat.type in typeCounts) {
+                        typeCounts[threat.type]++;
+                    } else {
+                        typeCounts['Other']++;
+                    }
+                    
+                    // Count by severity
+                    severityCounts[threat.severity]++;
+                    
+                    // Count countries
+                    sourceCounts[threat.source_country] = (sourceCounts[threat.source_country] || 0) + 1;
+                    targetCounts[threat.target_country] = (targetCounts[threat.target_country] || 0) + 1;
+                });
+                
+                // Update type counts
+                document.getElementById('malware-count').textContent = typeCounts['Malware'];
+                document.getElementById('phishing-count').textContent = typeCounts['Phishing'];
+                document.getElementById('ddos-count').textContent = typeCounts['DDoS'];
+                document.getElementById('bruteforce-count').textContent = typeCounts['Bruteforce'];
+                document.getElementById('vulnerability-count').textContent = typeCounts['Vulnerability'];
+                document.getElementById('other-count').textContent = typeCounts['Other'];
+                
+                // Update severity counts
+                document.getElementById('low-severity').textContent = severityCounts[1];
+                document.getElementById('medium-severity').textContent = severityCounts[2];
+                document.getElementById('high-severity').textContent = severityCounts[3];
+                document.getElementById('critical-severity').textContent = severityCounts[4];
+                document.getElementById('extreme-severity').textContent = severityCounts[5];
+                
+                // Update top source countries
+                const topSourcesDiv = document.getElementById('top-sources');
+                topSourcesDiv.innerHTML = '';
+                
+                Object.entries(sourceCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .forEach(([country, count]) => {
+                        const div = document.createElement('div');
+                        div.className = 'stat-item';
+                        div.innerHTML = `
+                            <div class="number">${count}</div>
+                            <div class="label">${country}</div>
+                        `;
+                        topSourcesDiv.appendChild(div);
+                    });
+                
+                // Update top target countries
+                const topTargetsDiv = document.getElementById('top-targets');
+                topTargetsDiv.innerHTML = '';
+                
+                Object.entries(targetCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .forEach(([country, count]) => {
+                        const div = document.createElement('div');
+                        div.className = 'stat-item';
+                        div.innerHTML = `
+                            <div class="number">${count}</div>
+                            <div class="label">${country}</div>
+                        `;
+                        topTargetsDiv.appendChild(div);
+                    });
+            })
+            .catch(error => {
+                console.error('Error fetching threat statistics:', error);
+            });
+    }
+</script>
+{% endblock %}
