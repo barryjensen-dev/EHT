@@ -414,7 +414,7 @@ def generate_generic_demo_output(script):
     results.append(f"- Category: {script.category.name}")
     results.append(f"- Description: {script.description}")
     
-    # Generate random educational content based on category
+    # Generate educational content based on category and tool name
     if script.category.name == 'Web Application Security':
         results.append("\nWeb Security Best Practices:")
         results.append("- Implement input validation and sanitization")
@@ -422,6 +422,30 @@ def generate_generic_demo_output(script):
         results.append("- Apply the principle of least privilege")
         results.append("- Implement proper session management")
         results.append("- Use HTTPS for all communications")
+        
+        # Add specific content for certain web app security tools
+        if "CSRF" in script.title:
+            results.append("\nCSRF Prevention Techniques:")
+            results.append("- Implement anti-CSRF tokens in forms")
+            results.append("- Use SameSite cookies to limit cross-origin requests")
+            results.append("- Verify the origin and referrer headers")
+            results.append("- Apply custom headers for AJAX requests")
+            results.append("- Implement CSRF protection at the framework level")
+        elif "JWT" in script.title:
+            results.append("\nJWT Security Best Practices:")
+            results.append("- Use strong signing keys")
+            results.append("- Implement proper algorithm selection (RS256 over HS256)")
+            results.append("- Set appropriate expiration times")
+            results.append("- Validate all claims, including 'aud' and 'iss'")
+            results.append("- Implement token rotation and revocation mechanisms")
+        elif "WAF" in script.title:
+            results.append("\nWAF Bypass Prevention:")
+            results.append("- Regularly update WAF rules")
+            results.append("- Implement custom rules for specific applications")
+            results.append("- Use multiple layers of security (defense in depth)")
+            results.append("- Monitor WAF logs for potential bypass attempts")
+            results.append("- Test WAF configurations against known bypass techniques")
+            
     elif script.category.name == 'Network Security':
         results.append("\nNetwork Security Controls:")
         results.append("- Implement network segmentation")
@@ -429,6 +453,30 @@ def generate_generic_demo_output(script):
         results.append("- Monitor network traffic for anomalies")
         results.append("- Encrypt sensitive data in transit")
         results.append("- Regularly scan for vulnerabilities")
+        
+        # Add specific content for certain network security tools
+        if "ARP" in script.title:
+            results.append("\nProtecting Against ARP Spoofing:")
+            results.append("- Use static ARP entries for critical systems")
+            results.append("- Implement ARP spoofing detection tools")
+            results.append("- Use encrypted protocols (SSH, HTTPS, etc.)")
+            results.append("- Use VLANs to limit the scope of ARP broadcasts")
+            results.append("- Consider using Dynamic ARP Inspection (DAI) on switches")
+        elif "DNS" in script.title:
+            results.append("\nDNS Security Best Practices:")
+            results.append("- Implement DNSSEC to verify DNS responses")
+            results.append("- Use DNS over HTTPS (DoH) or DNS over TLS (DoT)")
+            results.append("- Monitor for unexpected DNS queries")
+            results.append("- Restrict zone transfers to authorized servers")
+            results.append("- Use split-horizon DNS to limit internal information exposure")
+        elif "Firewall" in script.title:
+            results.append("\nFirewall Hardening Guidelines:")
+            results.append("- Apply the principle of least privilege to rule sets")
+            results.append("- Use stateful inspection for connection tracking")
+            results.append("- Implement proper ingress and egress filtering")
+            results.append("- Regularly audit and review firewall rules")
+            results.append("- Consider using next-generation firewalls with application awareness")
+            
     elif script.category.name == 'Cryptography':
         results.append("\nCryptographic Security Guidelines:")
         results.append("- Use strong, standardized algorithms")
@@ -436,6 +484,317 @@ def generate_generic_demo_output(script):
         results.append("- Never roll your own crypto")
         results.append("- Use sufficient key lengths")
         results.append("- Regularly rotate encryption keys")
+        
+        # Add specific content for certain cryptography tools
+        if "Symmetric" in script.title:
+            results.append("\nSymmetric Encryption Best Practices:")
+            results.append("- Use AES-256 for strong encryption")
+            results.append("- Implement secure key exchange mechanisms")
+            results.append("- Use appropriate modes of operation (GCM, CBC with HMAC)")
+            results.append("- Never reuse initialization vectors (IVs)")
+            results.append("- Consider authenticated encryption modes")
+        elif "Asymmetric" in script.title:
+            results.append("\nAsymmetric Encryption Recommendations:")
+            results.append("- Use RSA with at least 2048-bit keys")
+            results.append("- Consider ECC for better performance with smaller keys")
+            results.append("- Keep private keys securely stored")
+            results.append("- Implement proper certificate validation")
+            results.append("- Use forward secrecy in key exchange when possible")
+        elif "Hash" in script.title and "Hash Cracker" not in script.title:
+            results.append("\nSecure Hashing Guidelines:")
+            results.append("- Use modern hash functions (SHA-256, SHA-3, BLAKE2)")
+            results.append("- Always salt password hashes")
+            results.append("- Implement key stretching (bcrypt, Argon2, PBKDF2)")
+            results.append("- Verify hash integrity with HMACs when appropriate")
+            results.append("- Don't use MD5 or SHA-1 for security purposes")
+            
+    elif script.category.name == 'Mobile Security':
+        results.append("\nMobile Security Recommendations:")
+        results.append("- Implement proper data encryption")
+        results.append("- Use secure communication protocols")
+        results.append("- Apply principle of least privilege for permissions")
+        results.append("- Secure data storage and prevent leakage")
+        results.append("- Implement proper authentication and session management")
+        
+        # Add specific content for certain mobile security tools
+        if "APK" in script.title:
+            results.append("\nAndroid App Security Best Practices:")
+            results.append("- Implement proper ProGuard obfuscation")
+            results.append("- Avoid hardcoded secrets in code")
+            results.append("- Use Android Keystore for secure key storage")
+            results.append("- Implement SSL pinning for network communications")
+            results.append("- Properly validate intents and content providers")
+        elif "iOS" in script.title:
+            results.append("\niOS App Security Best Practices:")
+            results.append("- Use App Transport Security (ATS)")
+            results.append("- Implement proper Keychain usage")
+            results.append("- Apply Data Protection API for secure storage")
+            results.append("- Check for jailbreak detection")
+            results.append("- Implement secure authentication mechanisms")
+            
+    elif script.category.name == 'IoT Security':
+        results.append("\nIoT Security Best Practices:")
+        results.append("- Change default credentials")
+        results.append("- Keep firmware updated")
+        results.append("- Use network segmentation for IoT devices")
+        results.append("- Implement encrypted communications")
+        results.append("- Apply the principle of least functionality")
+        
+        # Add specific content for certain IoT security tools
+        if "Firmware" in script.title:
+            results.append("\nIoT Firmware Security Guidelines:")
+            results.append("- Implement secure boot mechanisms")
+            results.append("- Sign firmware updates")
+            results.append("- Use secure update processes")
+            results.append("- Remove debug interfaces in production")
+            results.append("- Encrypt sensitive sections of firmware")
+        elif "Zigbee" in script.title or "BLE" in script.title:
+            results.append("\nWireless IoT Security Recommendations:")
+            results.append("- Use strong encryption for wireless communications")
+            results.append("- Implement proper key management")
+            results.append("- Apply frequency hopping when available")
+            results.append("- Use the latest protocol security features")
+            results.append("- Limit wireless range to what's necessary")
+            
+    elif script.category.name == 'Blockchain & Smart Contract Security':
+        results.append("\nBlockchain Security Best Practices:")
+        results.append("- Implement proper access controls")
+        results.append("- Use secure key management")
+        results.append("- Follow smart contract security patterns")
+        results.append("- Conduct thorough security audits")
+        results.append("- Monitor for unusual blockchain activities")
+        
+        # Add specific content for certain blockchain security tools
+        if "Smart Contract" in script.title:
+            results.append("\nSmart Contract Security Guidelines:")
+            results.append("- Check for re-entrancy vulnerabilities")
+            results.append("- Avoid integer overflow/underflow")
+            results.append("- Implement proper access controls")
+            results.append("- Use secure randomness sources")
+            results.append("- Follow the checks-effects-interactions pattern")
+        elif "Wallet" in script.title:
+            results.append("\nCrypto Wallet Security Recommendations:")
+            results.append("- Use hardware wallets for large holdings")
+            results.append("- Implement multi-signature requirements")
+            results.append("- Secure private key storage")
+            results.append("- Use hierarchical deterministic wallets")
+            results.append("- Regularly verify wallet code integrity")
+            
+    elif script.category.name == 'Malware Analysis & Forensics':
+        results.append("\nMalware Analysis Best Practices:")
+        results.append("- Use isolated analysis environments")
+        results.append("- Implement proper containment procedures")
+        results.append("- Document all findings thoroughly")
+        results.append("- Use both static and dynamic analysis")
+        results.append("- Establish proper malware sample handling")
+        
+        # Add specific content for certain malware analysis tools
+        if "YARA" in script.title:
+            results.append("\nYARA Rule Development Guidelines:")
+            results.append("- Create specific rules to minimize false positives")
+            results.append("- Use multiple condition sections for complex detection")
+            results.append("- Include metadata for rule identification")
+            results.append("- Test rules against known benign samples")
+            results.append("- Share rules with the security community when appropriate")
+        elif "Memory" in script.title:
+            results.append("\nMemory Forensics Recommendations:")
+            results.append("- Capture memory as early as possible")
+            results.append("- Use write blockers for forensically sound acquisition")
+            results.append("- Look for process injection techniques")
+            results.append("- Analyze the process list for anomalies")
+            results.append("- Check for rootkit indicators in memory structures")
+            
+    elif script.category.name == 'Red Team Toolkit':
+        results.append("\nRed Team Operation Guidelines:")
+        results.append("- Establish clear scope and rules of engagement")
+        results.append("- Maintain detailed documentation")
+        results.append("- Use secure communications channels")
+        results.append("- Implement proper safeguards to prevent damage")
+        results.append("- Provide actionable remediation recommendations")
+        
+        # Add specific content for certain red team tools
+        if "Phishing" in script.title:
+            results.append("\nEthical Phishing Simulation Guidelines:")
+            results.append("- Obtain proper authorization")
+            results.append("- Define clear objectives and success metrics")
+            results.append("- Provide immediate education for users who fall victim")
+            results.append("- Avoid overly personal or sensitive lures")
+            results.append("- Follow up with training and awareness programs")
+        elif "Shell" in script.title or "Payload" in script.title:
+            results.append("\nPayload Development Security Considerations:")
+            results.append("- Use encryption for command and control")
+            results.append("- Implement timeout and self-termination features")
+            results.append("- Avoid destructive testing without explicit approval")
+            results.append("- Document all deployed payloads")
+            results.append("- Ensure complete removal at the end of testing")
+            
+    elif script.category.name == 'Blue Team Toolkit':
+        results.append("\nBlue Team Defense Strategies:")
+        results.append("- Implement defense in depth")
+        results.append("- Maintain comprehensive logging")
+        results.append("- Develop and test incident response plans")
+        results.append("- Conduct regular security assessments")
+        results.append("- Keep systems and applications updated")
+        
+        # Add specific content for certain blue team tools
+        if "Log" in script.title:
+            results.append("\nLog Management Best Practices:")
+            results.append("- Centralize log collection")
+            results.append("- Implement proper log retention policies")
+            results.append("- Set up automated alerting for suspicious events")
+            results.append("- Ensure log integrity and tamper protection")
+            results.append("- Regularly review and analyze logs")
+        elif "Honeypot" in script.title:
+            results.append("\nHoneypot Deployment Guidelines:")
+            results.append("- Make honeypots appear realistic")
+            results.append("- Isolate honeypots from production networks")
+            results.append("- Implement extensive monitoring")
+            results.append("- Analyze captured attack techniques")
+            results.append("- Use deception technology strategically")
+            
+    elif script.category.name == 'Social Engineering':
+        results.append("\nSocial Engineering Defense Strategies:")
+        results.append("- Implement security awareness training")
+        results.append("- Develop verification procedures for sensitive requests")
+        results.append("- Create a culture of security consciousness")
+        results.append("- Implement technical controls to supplement training")
+        results.append("- Regularly test defenses with authorized simulations")
+        
+        # Add specific content for certain social engineering tools
+        if "Email" in script.title:
+            results.append("\nEmail Security Best Practices:")
+            results.append("- Implement SPF, DKIM, and DMARC")
+            results.append("- Use email filtering and scanning")
+            results.append("- Train users to identify phishing attempts")
+            results.append("- Develop procedures for reporting suspicious emails")
+            results.append("- Use email authentication for sensitive communications")
+        elif "Social Media" in script.title:
+            results.append("\nSocial Media Security Guidelines:")
+            results.append("- Limit information shared on public profiles")
+            results.append("- Verify connection requests before accepting")
+            results.append("- Use strong, unique passwords for each platform")
+            results.append("- Enable two-factor authentication")
+            results.append("- Be cautious of third-party applications")
+            
+    elif script.category.name == 'Password Cracking':
+        results.append("\nPassword Security Recommendations:")
+        results.append("- Use long, complex, unique passwords")
+        results.append("- Implement multi-factor authentication")
+        results.append("- Use secure password hashing algorithms")
+        results.append("- Apply proper account lockout policies")
+        results.append("- Regularly audit password policies and strength")
+        
+        # Add specific content for certain password cracking tools
+        if "Dictionary" in script.title:
+            results.append("\nProtecting Against Dictionary Attacks:")
+            results.append("- Avoid common words and phrases in passwords")
+            results.append("- Implement rate limiting on authentication attempts")
+            results.append("- Use salted password hashing")
+            results.append("- Consider password complexity requirements")
+            results.append("- Implement account lockout after failed attempts")
+        elif "Rainbow" in script.title:
+            results.append("\nRainbow Table Attack Prevention:")
+            results.append("- Use unique salts for each password hash")
+            results.append("- Implement key stretching algorithms")
+            results.append("- Use modern hashing algorithms (bcrypt, Argon2)")
+            results.append("- Increase computational cost of password verification")
+            results.append("- Regularly update password hashing mechanisms")
+            
+    elif script.category.name == 'Cloud & Container Security':
+        results.append("\nCloud Security Best Practices:")
+        results.append("- Implement the principle of least privilege")
+        results.append("- Use multi-factor authentication")
+        results.append("- Encrypt sensitive data at rest and in transit")
+        results.append("- Maintain proper configuration management")
+        results.append("- Regularly audit access and permissions")
+        
+        # Add specific content for certain cloud security tools
+        if "AWS" in script.title or "S3" in script.title:
+            results.append("\nAWS Security Recommendations:")
+            results.append("- Use AWS CloudTrail for comprehensive logging")
+            results.append("- Implement proper IAM policies and roles")
+            results.append("- Secure S3 buckets with appropriate permissions")
+            results.append("- Use VPC security groups and NACLs effectively")
+            results.append("- Enable AWS GuardDuty for threat detection")
+        elif "Docker" in script.title or "Container" in script.title:
+            results.append("\nContainer Security Guidelines:")
+            results.append("- Use minimal base images")
+            results.append("- Scan containers for vulnerabilities")
+            results.append("- Never run containers as root")
+            results.append("- Implement proper network segmentation")
+            results.append("- Use read-only file systems when possible")
+            
+    elif script.category.name == 'Hardware & Firmware Hacking':
+        results.append("\nHardware Security Recommendations:")
+        results.append("- Implement secure boot mechanisms")
+        results.append("- Use hardware security modules for cryptographic operations")
+        results.append("- Apply physical security controls")
+        results.append("- Protect debug and test interfaces")
+        results.append("- Implement anti-tampering mechanisms")
+        
+        # Add specific content for certain hardware security tools
+        if "Firmware" in script.title:
+            results.append("\nFirmware Security Best Practices:")
+            results.append("- Implement secure update mechanisms")
+            results.append("- Sign firmware with strong cryptographic signatures")
+            results.append("- Use secure boot to verify firmware integrity")
+            results.append("- Implement proper key management for firmware signing")
+            results.append("- Remove debug capabilities in production")
+        elif "JTAG" in script.title or "Serial" in script.title:
+            results.append("\nDebug Interface Security Guidelines:")
+            results.append("- Disable or physically remove debug interfaces in production")
+            results.append("- Implement authentication for debug access")
+            results.append("- Use fuse bits to permanently disable debug features")
+            results.append("- Monitor for unexpected debug activity")
+            results.append("- Implement side-channel attack protections")
+            
+    elif script.category.name == 'Industrial Control Systems (ICS/SCADA)':
+        results.append("\nICS/SCADA Security Best Practices:")
+        results.append("- Implement network segmentation and air-gapping")
+        results.append("- Use unidirectional security gateways when possible")
+        results.append("- Apply defense in depth strategies")
+        results.append("- Develop and test incident response procedures")
+        results.append("- Regularly assess and patch systems")
+        
+        # Add specific content for certain ICS security tools
+        if "Modbus" in script.title or "Protocol" in script.title:
+            results.append("\nIndustrial Protocol Security Recommendations:")
+            results.append("- Implement protocol-aware monitoring")
+            results.append("- Use authenticated and encrypted protocols when available")
+            results.append("- Monitor for unusual command sequences")
+            results.append("- Implement proper access controls")
+            results.append("- Validate protocol inputs and commands")
+        elif "PLC" in script.title or "SCADA" in script.title:
+            results.append("\nPLC and SCADA Security Guidelines:")
+            results.append("- Change default credentials")
+            results.append("- Implement access control lists")
+            results.append("- Regularly backup configurations")
+            results.append("- Monitor for unauthorized changes")
+            results.append("- Use secure remote access methods")
+            
+    elif script.category.name == 'Bluetooth & RF Hacking':
+        results.append("\nWireless Security Best Practices:")
+        results.append("- Implement proper encryption")
+        results.append("- Use strong authentication mechanisms")
+        results.append("- Regularly update firmware")
+        results.append("- Monitor for unauthorized devices")
+        results.append("- Implement proper pairing procedures")
+        
+        # Add specific content for certain wireless security tools
+        if "BLE" in script.title:
+            results.append("\nBluetooth Low Energy Security Recommendations:")
+            results.append("- Use LE Secure Connections pairing")
+            results.append("- Implement proper key management")
+            results.append("- Consider privacy features like address randomization")
+            results.append("- Validate GATT client authentication")
+            results.append("- Minimize sensitive information in advertising packets")
+        elif "RF" in script.title or "Radio" in script.title:
+            results.append("\nRF Security Guidelines:")
+            results.append("- Use frequency hopping when available")
+            results.append("- Implement proper encryption of the radio channel")
+            results.append("- Minimize transmission power to reduce range")
+            results.append("- Use directional antennas when appropriate")
+            results.append("- Consider jamming detection and resilience")
     else:
         results.append("\nSecurity Fundamentals:")
         results.append("- Apply defense in depth")
@@ -443,6 +802,14 @@ def generate_generic_demo_output(script):
         results.append("- Regularly update and patch systems")
         results.append("- Educate users on security practices")
         results.append("- Perform regular security assessments")
+    
+    # Add a demo section to show what the tool would do
+    results.append("\n[DEMO OUTPUT]")
+    results.append(f"Running {script.title} simulation...")
+    results.append(f"Target: demo-system.example.com")
+    results.append(f"Parameters: Default educational settings")
+    results.append(f"Scan time: {random.randint(5, 60)} seconds")
+    results.append(f"Results: Educational demonstration complete")
     
     return "\n".join(results)
 
