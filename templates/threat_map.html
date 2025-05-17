@@ -18,11 +18,104 @@
                 <div class="btn-group">
                     <button type="button" class="btn btn-outline-primary active" id="view-map-btn">Map View</button>
                     <button type="button" class="btn btn-outline-primary" id="view-stats-btn">Statistics</button>
+                    <button type="button" class="btn btn-outline-primary" id="view-details-btn">Threat Details</button>
                 </div>
             </div>
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                This map visualizes real-time security threats detected across the globe. Use the filters to customize the view and timeframe.
+                This map visualizes real-time security threats detected across the globe from AlienVault Open Threat Exchange (OTX). Use the filters to customize the view and timeframe.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i> Threat Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Timeframe</label>
+                            <select id="timeframe-filter" class="form-select">
+                                <option value="3600">Last Hour</option>
+                                <option value="86400" selected>Last 24 Hours</option>
+                                <option value="259200">Last 3 Days</option>
+                                <option value="604800">Last Week</option>
+                                <option value="2592000">Last Month</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Severity</label>
+                            <select id="severity-filter" class="form-select">
+                                <option value="all" selected>All Severities</option>
+                                <option value="5">Critical (5)</option>
+                                <option value="4">High (4)</option>
+                                <option value="3">Medium (3)</option>
+                                <option value="2">Low (2)</option>
+                                <option value="1">Minimal (1)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Threat Type</label>
+                            <select id="type-filter" class="form-select">
+                                <option value="all" selected>All Types</option>
+                                <option value="Malware">Malware</option>
+                                <option value="Phishing">Phishing</option>
+                                <option value="DDoS">DDoS</option>
+                                <option value="Bruteforce">Bruteforce</option>
+                                <option value="Vulnerability">Vulnerability</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Country</label>
+                            <select id="country-filter" class="form-select">
+                                <option value="all" selected>All Countries</option>
+                                <option value="United States">United States</option>
+                                <option value="China">China</option>
+                                <option value="Russia">Russia</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="Germany">Germany</option>
+                                <option value="Brazil">Brazil</option>
+                                <option value="India">India</option>
+                                <option value="Japan">Japan</option>
+                                <!-- More countries will be populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Indicator Type</label>
+                            <select id="indicator-filter" class="form-select">
+                                <option value="all" selected>All Indicators</option>
+                                <option value="IPv4">IP Address (IPv4)</option>
+                                <option value="IPv6">IP Address (IPv6)</option>
+                                <option value="domain">Domain</option>
+                                <option value="URL">URL</option>
+                                <option value="FileHash-MD5">File Hash (MD5)</option>
+                                <option value="FileHash-SHA1">File Hash (SHA1)</option>
+                                <option value="FileHash-SHA256">File Hash (SHA256)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" id="search-filter" class="form-control" placeholder="Search threats...">
+                                <button class="btn btn-primary" type="button" id="apply-filters">
+                                    <i class="fas fa-search me-1"></i> Apply Filters
+                                </button>
+                                <button class="btn btn-secondary" type="button" id="reset-filters">
+                                    <i class="fas fa-undo me-1"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -102,7 +195,7 @@
             </div>
         </div>
         
-        <div class="col-12 mt-4">
+        <div class="col-md-6 mt-4">
             <div class="stats-card">
                 <h4>Top Source Countries</h4>
                 <div class="stats-grid" id="top-sources">
@@ -111,11 +204,112 @@
             </div>
         </div>
         
-        <div class="col-12 mt-4">
+        <div class="col-md-6 mt-4">
             <div class="stats-card">
                 <h4>Top Target Countries</h4>
                 <div class="stats-grid" id="top-targets">
                     <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mt-4">
+            <div class="stats-card">
+                <h4>Indicator Type Distribution</h4>
+                <div class="stats-grid" id="indicator-distribution">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mt-4">
+            <div class="stats-card">
+                <h4>Threat Timeline</h4>
+                <div id="threat-timeline" style="height: 250px;">
+                    <p class="text-center py-5">Timeline will appear when data is loaded</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Threat Details View (hidden by default) -->
+    <div class="row d-none" id="details-view">
+        <div class="col-12">
+            <div class="card bg-dark mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Threat Details</h4>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" id="refresh-threats">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="export-threats">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-dark border-top-0 mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Indicator</th>
+                                    <th>Source</th>
+                                    <th>Severity</th>
+                                    <th>Timestamp</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="threat-details-table">
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">Loading threat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span id="showing-threats">Showing 0 threats</span>
+                        </div>
+                        <div>
+                            <nav aria-label="Threat navigation">
+                                <ul class="pagination mb-0" id="threat-pagination">
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#" tabindex="-1">Previous</a>
+                                    </li>
+                                    <li class="page-item active">
+                                        <a class="page-link" href="#">1</a>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Threat Detail Modal -->
+            <div class="modal fade" id="threatDetailModal" tabindex="-1" aria-labelledby="threatDetailModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content bg-dark text-light">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="threatDetailModalLabel">Threat Details</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="threat-detail-content">
+                            <!-- Modal content will be populated dynamically -->
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <a href="#" class="btn btn-primary" id="view-pulse-btn" target="_blank">View in OTX</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

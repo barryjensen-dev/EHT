@@ -166,9 +166,10 @@ def fetch_real_threat_data(timeframe=86400):
                     indicator_type = indicator.get('type', '')
                     indicator_value = indicator.get('indicator', '')
                     
-                    # Only process IP indicators
-                    if indicator_type == 'IPv4' and is_valid_public_ip(indicator_value):
-                        try:
+                    # Process different types of indicators
+                    try:
+                        # For IP indicators (IPv4 and IPv6)
+                        if indicator_type in ['IPv4', 'IPv6'] and is_valid_public_ip(indicator_value):
                             # Get geolocation for the IP
                             geo_url = f'https://otx.alienvault.com/api/v1/indicators/IPv4/{indicator_value}/geo'
                             geo_response = requests.get(geo_url, headers=headers, timeout=10)
@@ -183,17 +184,117 @@ def fetch_real_threat_data(timeframe=86400):
                             threats.append({
                                 "id": len(threats) + 1,
                                 "type": threat_type,
+                                "indicator_type": indicator_type,
+                                "indicator_value": indicator_value,
                                 "source_country": country,
                                 "target_country": get_random_target_country(country),
                                 "latitude": latitude,
                                 "longitude": longitude,
                                 "severity": severity,
                                 "timestamp": pulse_created,
-                                "description": pulse_name + (f" - {pulse_description[:100]}..." if pulse_description else "")
+                                "description": pulse_name + (f" - {pulse_description[:100]}..." if pulse_description else ""),
+                                "pulse_id": pulse.get('id', ''),
+                                "pulse_url": f"https://otx.alienvault.com/pulse/{pulse.get('id', '')}",
+                                "tags": pulse_tags[:5] if pulse_tags else []
                             })
                             
-                        except Exception as e:
-                            logger.error(f"Error processing indicator {indicator_value}: {str(e)}")
+                        # For domain indicators
+                        elif indicator_type in ['domain', 'hostname']:
+                            # Try to get geolocation for domain
+                            try:
+                                # Get domain geo info
+                                geo_url = f'https://otx.alienvault.com/api/v1/indicators/domain/{indicator_value}/geo'
+                                geo_response = requests.get(geo_url, headers=headers, timeout=10)
+                                geo_data = geo_response.json()
+                                
+                                if 'country_name' in geo_data:
+                                    country = geo_data.get('country_name', 'Unknown')
+                                    latitude = geo_data.get('latitude', 0)
+                                    longitude = geo_data.get('longitude', 0)
+                                    
+                                    threats.append({
+                                        "id": len(threats) + 1,
+                                        "type": threat_type,
+                                        "indicator_type": indicator_type,
+                                        "indicator_value": indicator_value,
+                                        "source_country": country,
+                                        "target_country": get_random_target_country(country),
+                                        "latitude": latitude,
+                                        "longitude": longitude,
+                                        "severity": severity,
+                                        "timestamp": pulse_created,
+                                        "description": f"Domain: {indicator_value} - {pulse_name[:100]}",
+                                        "pulse_id": pulse.get('id', ''),
+                                        "pulse_url": f"https://otx.alienvault.com/pulse/{pulse.get('id', '')}",
+                                        "tags": pulse_tags[:5] if pulse_tags else []
+                                    })
+                            except Exception:
+                                # If geo lookup fails, we don't add this indicator
+                                pass
+                        
+                        # For URL indicators
+                        elif indicator_type == 'URL':
+                            # Extract domain from URL and try to get geo for it
+                            try:
+                                domain_match = re.search(r'https?://([^/]+)', indicator_value)
+                                if domain_match:
+                                    domain = domain_match.group(1)
+                                    
+                                    # Get domain geo info
+                                    geo_url = f'https://otx.alienvault.com/api/v1/indicators/domain/{domain}/geo'
+                                    geo_response = requests.get(geo_url, headers=headers, timeout=10)
+                                    geo_data = geo_response.json()
+                                    
+                                    if 'country_name' in geo_data:
+                                        country = geo_data.get('country_name', 'Unknown')
+                                        latitude = geo_data.get('latitude', 0)
+                                        longitude = geo_data.get('longitude', 0)
+                                        
+                                        threats.append({
+                                            "id": len(threats) + 1,
+                                            "type": threat_type,
+                                            "indicator_type": indicator_type,
+                                            "indicator_value": indicator_value[:100] + ('...' if len(indicator_value) > 100 else ''),
+                                            "source_country": country,
+                                            "target_country": get_random_target_country(country),
+                                            "latitude": latitude,
+                                            "longitude": longitude,
+                                            "severity": severity,
+                                            "timestamp": pulse_created,
+                                            "description": f"URL: {indicator_value[:50]}... - {pulse_name[:50]}",
+                                            "pulse_id": pulse.get('id', ''),
+                                            "pulse_url": f"https://otx.alienvault.com/pulse/{pulse.get('id', '')}",
+                                            "tags": pulse_tags[:5] if pulse_tags else []
+                                        })
+                            except Exception:
+                                # If URL processing fails, we don't add this indicator
+                                pass
+                        
+                        # For file hash indicators
+                        elif indicator_type in ['file_hash', 'FileHash-MD5', 'FileHash-SHA1', 'FileHash-SHA256']:
+                            # For file hashes, we use the pulse source country if available
+                            if 'author_country' in pulse and pulse['author_country']:
+                                country_data = get_country_coordinates(pulse['author_country'])
+                                if country_data:
+                                    threats.append({
+                                        "id": len(threats) + 1,
+                                        "type": "Malware",  # File hashes are generally malware
+                                        "indicator_type": indicator_type,
+                                        "indicator_value": indicator_value,
+                                        "source_country": country_data['name'],
+                                        "target_country": get_random_target_country(country_data['name']),
+                                        "latitude": country_data['latitude'],
+                                        "longitude": country_data['longitude'],
+                                        "severity": severity,
+                                        "timestamp": pulse_created,
+                                        "description": f"File Hash: {indicator_value[:15]}... - {pulse_name[:50]}",
+                                        "pulse_id": pulse.get('id', ''),
+                                        "pulse_url": f"https://otx.alienvault.com/pulse/{pulse.get('id', '')}",
+                                        "tags": pulse_tags[:5] if pulse_tags else []
+                                    })
+                            
+                    except Exception as e:
+                        logger.error(f"Error processing indicator {indicator_value}: {str(e)}")
                     
                     # Limit the number of threats per pulse to avoid overloading the map
                     if len(threats) % 100 == 0 and i > 3:
@@ -324,6 +425,55 @@ def get_random_target_country(source_country):
     
     # Return random target country or default if none available
     return random.choice(potential_targets) if potential_targets else "Unknown"
+
+def get_country_coordinates(country_name):
+    """Get coordinates for a country based on its name."""
+    country_data = {
+        "United States": {"name": "United States", "latitude": 37.0902, "longitude": -95.7129},
+        "China": {"name": "China", "latitude": 35.8617, "longitude": 104.1954},
+        "Russia": {"name": "Russia", "latitude": 61.5240, "longitude": 105.3188},
+        "United Kingdom": {"name": "United Kingdom", "latitude": 55.3781, "longitude": -3.4360},
+        "Germany": {"name": "Germany", "latitude": 51.1657, "longitude": 10.4515},
+        "Brazil": {"name": "Brazil", "latitude": -14.2350, "longitude": -51.9253},
+        "Australia": {"name": "Australia", "latitude": -25.2744, "longitude": 133.7751},
+        "India": {"name": "India", "latitude": 20.5937, "longitude": 78.9629},
+        "Japan": {"name": "Japan", "latitude": 36.2048, "longitude": 138.2529},
+        "Canada": {"name": "Canada", "latitude": 56.1304, "longitude": -106.3468},
+        "South Korea": {"name": "South Korea", "latitude": 35.9078, "longitude": 127.7669},
+        "France": {"name": "France", "latitude": 46.2276, "longitude": 2.2137},
+        "Mexico": {"name": "Mexico", "latitude": 23.6345, "longitude": -102.5528},
+        "Italy": {"name": "Italy", "latitude": 41.8719, "longitude": 12.5674},
+        "Singapore": {"name": "Singapore", "latitude": 1.3521, "longitude": 103.8198},
+        "South Africa": {"name": "South Africa", "latitude": -30.5595, "longitude": 22.9375},
+        "Spain": {"name": "Spain", "latitude": 40.4637, "longitude": -3.7492},
+        "Ukraine": {"name": "Ukraine", "latitude": 48.3794, "longitude": 31.1656},
+        "Netherlands": {"name": "Netherlands", "latitude": 52.1326, "longitude": 5.2913},
+        "Sweden": {"name": "Sweden", "latitude": 60.1282, "longitude": 18.6435},
+        "Indonesia": {"name": "Indonesia", "latitude": -0.7893, "longitude": 113.9213},
+        "Taiwan": {"name": "Taiwan", "latitude": 23.6978, "longitude": 120.9605},
+        "Israel": {"name": "Israel", "latitude": 31.0461, "longitude": 34.8516},
+        "Norway": {"name": "Norway", "latitude": 60.4720, "longitude": 8.4689},
+        "Switzerland": {"name": "Switzerland", "latitude": 46.8182, "longitude": 8.2275},
+        "Poland": {"name": "Poland", "latitude": 51.9194, "longitude": 19.1451},
+        "Turkey": {"name": "Turkey", "latitude": 38.9637, "longitude": 35.2433},
+        "Saudi Arabia": {"name": "Saudi Arabia", "latitude": 23.8859, "longitude": 45.0792},
+        "Iran": {"name": "Iran", "latitude": 32.4279, "longitude": 53.6880},
+        "Malaysia": {"name": "Malaysia", "latitude": 4.2105, "longitude": 101.9758},
+        "Thailand": {"name": "Thailand", "latitude": 15.8700, "longitude": 100.9925},
+        "Vietnam": {"name": "Vietnam", "latitude": 14.0583, "longitude": 108.2772},
+        "Philippines": {"name": "Philippines", "latitude": 12.8797, "longitude": 121.7740},
+        "Egypt": {"name": "Egypt", "latitude": 26.8206, "longitude": 30.8025},
+        "Argentina": {"name": "Argentina", "latitude": -38.4161, "longitude": -63.6167},
+        "Colombia": {"name": "Colombia", "latitude": 4.5709, "longitude": -74.2973}
+    }
+    
+    # Case-insensitive matching
+    for key, value in country_data.items():
+        if key.lower() == country_name.lower():
+            return value
+    
+    # If country not found, return None
+    return None
 
 def generate_demo_threat_data(timeframe=86400):
     """
