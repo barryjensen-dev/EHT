@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ script.title }} - Ethical Hacking Toolkit{% endblock %}
+
+{% block head %}
+<!-- Prism.js for code highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css">
+<style>
+    .code-block {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    .copy-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        z-index: 100;
+    }
+    .function-card {
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('category', category_id=script.category_id) }}">{{ script.category.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ script.title }}</li>
+    </ol>
+</nav>
+
+<div class="alert alert-danger">
+    <h5><i class="fas fa-exclamation-triangle me-2"></i>Ethical Use Warning</h5>
+    <p>This script is provided for <strong>educational and authorized security assessment purposes only</strong>. 
+       Using this tool without proper authorization may violate laws and regulations in your jurisdiction.</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-dark">
+        <h2 class="mb-0">{{ script.title }}</h2>
+    </div>
+    <div class="card-body">
+        <p class="lead">{{ script.description }}</p>
+        <p><strong>Module Path:</strong> <code>{{ script.module_path }}</code></p>
+        <p><strong>Category:</strong> {{ script.category.name }}</p>
+        <p><strong>Last Updated:</strong> {{ script.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-dark">
+        <h3 class="mb-0">Module Documentation</h3>
+    </div>
+    <div class="card-body">
+        <div class="bg-light p-3 rounded">
+            <pre>{{ module_doc }}</pre>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-dark">
+        <h3 class="mb-0">Functions</h3>
+    </div>
+    <div class="card-body">
+        <div class="accordion" id="functionAccordion">
+            {% for function in functions %}
+            <div class="accordion-item mb-3">
+                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                            data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" 
+                            aria-controls="collapse{{ loop.index }}">
+                        <code>{{ function.name }}()</code>
+                    </button>
+                </h2>
+                <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" 
+                     aria-labelledby="heading{{ loop.index }}" data-bs-parent="#functionAccordion">
+                    <div class="accordion-body">
+                        <h5>Documentation:</h5>
+                        <div class="bg-light p-3 rounded mb-3">
+                            <pre>{{ function.doc }}</pre>
+                        </div>
+                        
+                        <h5>Source Code:</h5>
+                        <div class="code-block">
+                            <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                    data-code="{{ function.source }}">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                            <pre><code class="language-python">{{ function.source }}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-dark">
+        <h3 class="mb-0">Complete Source Code</h3>
+    </div>
+    <div class="card-body">
+        <div class="code-block">
+            <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                    data-code="{{ source_code }}">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+            <pre><code class="language-python">{{ source_code }}</code></pre>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('category', category_id=script.category_id) }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to {{ script.category.name }}
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Prism.js for code highlighting -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
+
+<script>
+    // Copy code functionality
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const code = btn.getAttribute('data-code');
+            navigator.clipboard.writeText(code)
+                .then(() => {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy code');
+                });
+        });
+    });
+</script>
+{% endblock %}

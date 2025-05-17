@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block title %}About - Ethical Hacking Toolkit{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-dark">
+        <h2 class="mb-0">About the Ethical Hacking Toolkit</h2>
+    </div>
+    <div class="card-body">
+        <h3>Project Overview</h3>
+        <p>
+            The Ethical Hacking Toolkit is a comprehensive collection of Python scripts designed for educational purposes 
+            in the field of cybersecurity and ethical hacking. This project aims to provide well-documented, modular code 
+            examples that demonstrate various security testing techniques across multiple domains.
+        </p>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h3>Key Features</h3>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Clear, well-documented Python scripts</li>
+                    <li class="list-group-item">Educational examples for cybersecurity learning</li>
+                    <li class="list-group-item">Modular, reusable code structure</li>
+                    <li class="list-group-item">Coverage of multiple security domains</li>
+                    <li class="list-group-item">Proper error handling and input validation</li>
+                    <li class="list-group-item">Ethical usage guidelines</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h3>Security Domains</h3>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5><i class="fas fa-globe me-2"></i>Web Application Security</h5>
+                        <p>Tools for testing web applications for vulnerabilities like SQL injection, XSS, CSRF, etc.</p>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5><i class="fas fa-wifi me-2"></i>Network Security</h5>
+                        <p>Scripts for network reconnaissance, packet analysis, and vulnerability assessment.</p>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5><i class="fas fa-cpu me-2"></i>IoT Security</h5>
+                        <p>Tools for discovering and testing Internet of Things devices.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="fas fa-lock me-2"></i>Cryptography</h5>
+                        <p>Scripts for cryptographic analysis and education.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h3 class="mt-4">Ethical Guidelines</h3>
+        <div class="alert alert-warning">
+            <h4><i class="fas fa-exclamation-triangle me-2"></i>Important Disclaimer</h4>
+            <p>
+                This toolkit is provided for <strong>educational and authorized security assessment purposes only</strong>. 
+                The use of these tools without proper authorization may violate laws and regulations in your jurisdiction.
+            </p>
+            <hr>
+            <h5>Guidelines for Ethical Use:</h5>
+            <ol>
+                <li>Only use these tools on systems you own or have explicit permission to test</li>
+                <li>Document all security testing activities</li>
+                <li>Report vulnerabilities responsibly to the system owners</li>
+                <li>Follow all applicable laws and regulations</li>
+                <li>Never use these tools for malicious purposes or unauthorized access</li>
+                <li>Be aware that security testing may cause unintended system disruptions</li>
+                <li>Always have proper backup procedures in place before testing</li>
+            </ol>
+        </div>
+        
+        <h3 class="mt-4">Educational Philosophy</h3>
+        <p>
+            We believe that understanding how security vulnerabilities work is essential for building more secure systems. 
+            This toolkit aims to provide practical, hands-on learning opportunities for security professionals, students, 
+            and enthusiasts in a responsible manner.
+        </p>
+        <p>
+            Each script includes:
+        </p>
+        <ul>
+            <li>Clear documentation explaining the purpose and functionality</li>
+            <li>Usage examples for educational understanding</li>
+            <li>Explanations of the security concepts involved</li>
+            <li>Modular code structure for easy understanding and reuse</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ category.name }} - Ethical Hacking Toolkit{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+    </ol>
+</nav>
+
+<div class="card mb-4">
+    <div class="card-header bg-dark">
+        <h2 class="mb-0">
+            <i class="fas fa-{{ category.icon }} me-2"></i>{{ category.name }}
+        </h2>
+    </div>
+    <div class="card-body">
+        <p class="lead">{{ category.description }}</p>
+    </div>
+</div>
+
+{% if category.scripts %}
+<div class="row">
+    {% for script in category.scripts %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ script.title }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ script.description }}</p>
+                <p class="card-text">
+                    <small class="text-muted">Last updated: {{ script.updated_at.strftime('%Y-%m-%d') }}</small>
+                </p>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('script_view', script_id=script.id) }}" class="btn btn-outline-primary">View Script</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i> No scripts available in this category yet.
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Categories
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+/* Custom styles for the Ethical Hacking Toolkit */
+
+/* Add some padding to the top of the body to account for the fixed navbar */
+body {
+    padding-top: 10px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Make the footer stick to the bottom */
+footer {
+    margin-top: auto;
+}
+
+/* Card hover effect */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Code blocks styling */
+pre {
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 5px;
+}
+
+/* Button hover effects */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom breadcrumb styling */
+.breadcrumb {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+/* Jumbotron styling */
+.jumbotron {
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Add icons to list items in About page */
+.about-list li {
+    position: relative;
+    padding-left: 25px;
+}
+
+.about-list li:before {
+    content: "\f105";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 0;
+    color: var(--bs-primary);
+}
